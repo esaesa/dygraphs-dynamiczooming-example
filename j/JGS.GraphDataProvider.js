@@ -1,5 +1,6 @@
 (function (JGS, $, undefined) {
 
+
   JGS.GraphDataProvider = function () {
     this.serverDataSims = {};
     this.newGraphDataCallbacks = $.Callbacks();
@@ -8,7 +9,7 @@
     this.lastDetailReqNum = 0;
   };
 
-  JGS.GraphDataProvider.prototype.loadData = function(seriesName, rangeStartDateTm, rangeEndDateTm, detailStartDateTm, detailEndDateTm, pixelWidth) {
+  JGS.GraphDataProvider.prototype.loadData = function (seriesName, rangeStartDateTm, rangeEndDateTm, detailStartDateTm, detailEndDateTm, pixelWidth) {
 
     var serverDataSim = this.serverDataSims[seriesName];
     if (!serverDataSim) {
@@ -20,7 +21,7 @@
     if (rangeStartDateTm && rangeEndDateTm) {
       this.rangeDataLoadComplete = false;
       // load range data
-      var numRangeIntervals = pixelWidth / 2; // Downsample to num intervals = width in pixels ...so at most, draw one point every pixel
+      var numRangeIntervals = pixelWidth / 2; // Downsample to num intervals = width in pixels / 2 ...so at most, draw one point every two pixels
       var rangeDataLoadReq = {
         reqType: "range",
         reqNum: ++this.lastRangeReqNum,
@@ -38,8 +39,8 @@
 
     // load detail data
     if (detailStartDateTm && detailEndDateTm) {
-     this.detailDataLoadComplete = false;
-      var numDetailsIntervals = pixelWidth / 2;
+      this.detailDataLoadComplete = false;
+      var numDetailsIntervals = pixelWidth / 2; // Downsample to num intervals = width in pixels / 2 ...so at most, draw one point every two pixels
       var detailDataLoadReq = {
         reqType: "detail",
         reqNum: ++this.lastDetailReqNum,
@@ -57,7 +58,7 @@
   };
 
 
-  JGS.GraphDataProvider.prototype._onServerDataLoad = function(dataLoadReq, dataLoadResp) {
+  JGS.GraphDataProvider.prototype._onServerDataLoad = function (dataLoadReq, dataLoadResp) {
 
     console.log("_onServerDataLoad", dataLoadReq, dataLoadResp);
 
@@ -84,7 +85,7 @@
 
       //Convert to dygraph native format
       var dyData = [];
-      for(var i=0; i<splicedData.length;i++) {
+      for (var i = 0; i < splicedData.length; i++) {
         if (dataLoadReq.includeMinMax)
           dyData.push([new Date(splicedData[i].x), [splicedData[i].min, splicedData[i].avg, splicedData[i].max]]);
         else
@@ -92,7 +93,7 @@
       }
 
       var graphData = {
-        dyData : dyData,
+        dyData: dyData,
         detailStartDateTm: this.lastDetailDataLoadReq.startDateTm,
         detailEndDateTm: this.lastDetailDataLoadReq.endDateTm
       };
@@ -102,7 +103,7 @@
 
   };
 
-  JGS.GraphDataProvider.prototype._spliceRangeAndDetail = function(rangeDps, detailDps) {
+  JGS.GraphDataProvider.prototype._spliceRangeAndDetail = function (rangeDps, detailDps) {
 
     var splicedDps = [];
 
@@ -157,5 +158,4 @@
   }
 
 
-
-} (window.JGS = window.JGS || {}, jQuery));
+}(window.JGS = window.JGS || {}, jQuery));
