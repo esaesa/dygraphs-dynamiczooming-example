@@ -5,11 +5,12 @@
    This class provides javascript handling specific  to the example1 page. Most importantly, it provides the dygraphs
    setup and handling, including the handling of mouse-down/up events on the dygraphs range control element.
 
-   @class Demo1Page
+   @class Demo2Page
    @constructor
    */
-  JGS.Demo1Page = function (pageCfg) {
+  JGS.Demo2Page = function (pageCfg) {
     this.$graphCont = pageCfg.$graphCont;
+    this.$rangeBtnsCont = pageCfg.$rangeBtnsCont;
 
     this.graphDataProvider = new JGS.GraphDataProvider();
     this.graphDataProvider.newGraphDataCallbacks.add($.proxy(this._onNewGraphData, this));
@@ -22,14 +23,20 @@
    *
    * @method
    */
-  JGS.Demo1Page.prototype.init = function () {
+  JGS.Demo2Page.prototype.init = function () {
     this.showSpinner(true);
+
+    this._setupRangeButtons();
 
     // Default range dates
     var rangeEndMom = moment().utc();
     rangeEndMom.startOf('hour');
     rangeEndMom.add('hour', 1);
     var rangeStartMom = moment.utc(rangeEndMom).add('month', -6);
+
+    this.$rangeBtnsCont.find("button[name='range-btn-6m']").addClass('active');
+
+    console.log("here", this.$rangeBtnsCont.find("button[name='range-btn-1y']"));
 
     // Default detail dates
     var detailEndMom = moment(rangeEndMom);
@@ -41,6 +48,57 @@
 
   };
 
+  JGS.Demo2Page.prototype._setupRangeButtons = function () {
+    var self = this;
+
+    this.$rangeBtnsCont.children().on('click', function (evt) {
+      evt.preventDefault();
+      var rangeType = evt.target.name.toString().replace("range-btn-", "");
+
+      self.$rangeBtnsCont.children().removeClass('active');
+
+      $(this).addClass('active');
+
+      var rangeEndMom;
+      rangeEndMom = moment().utc();
+      rangeEndMom.minutes(0).seconds(0);
+      rangeEndMom.add('hour', 1);
+
+      console.log("rangeType", rangeType);
+
+      var rangeStartMom;
+      if (rangeType == "1d") {
+        rangeStartMom = moment.utc(rangeEndMom).add('day', -1);
+      } else if (rangeType == "1w") {
+        rangeStartMom = moment.utc(rangeEndMom).add('week', -1);
+      } else if (rangeType == "1m") {
+        rangeStartMom = moment.utc(rangeEndMom).add('month', -1);
+      } else if (rangeType == "6m") {
+        rangeStartMom = moment.utc(rangeEndMom).add('month', -6);
+      } else if (rangeType == "1y") {
+        rangeStartMom = moment.utc(rangeEndMom).add('year', -1);
+      } else if (rangeType == "5y") {
+        rangeStartMom = moment.utc(rangeEndMom).add('year', -5);
+      } else if (rangeType == "ytd") {
+        rangeStartMom = moment().startOf('year').utc();
+      }
+
+      //For demo purposes, when range is reset, auto reset detail view to same extents as range
+      var detailStartMom = rangeStartMom.clone();
+      var detailEndMom = rangeEndMom.clone();
+
+      self.showSpinner(true);
+      self.graphDataProvider.loadData("Series-A",
+                                      rangeStartMom.toDate(),
+                                      rangeEndMom.toDate(),
+                                      detailStartMom.toDate(),
+                                      detailEndMom.toDate(),
+                                      self.$graphCont.width());
+
+    });
+
+  };
+
   /**
    * Internal method to add mouse down listener to dygraphs range selector.  Coded so that it can be called
    * multiple times without concern. Although not necessary for simple example (like example1), this becomes necessary
@@ -49,7 +107,7 @@
    * @method _setupRangeMouseHandling
    * @private
    */
-  JGS.Demo1Page.prototype._setupRangeMouseHandling = function () {
+  JGS.Demo2Page.prototype._setupRangeMouseHandling = function () {
     var self = this;
 
     // Element used for tracking mouse up events
@@ -100,7 +158,7 @@
    * @method _loadNewDetailData
    * @private
    */
-  JGS.Demo1Page.prototype._loadNewDetailData = function () {
+  JGS.Demo2Page.prototype._loadNewDetailData = function () {
     this.showSpinner(true);
     this.graphDataProvider.loadData("Series-A", null, null, this.detailStartDateTm, this.detailEndDateTm, this.$graphCont.width());
   };
@@ -112,8 +170,9 @@
    * @method _onNewGraphData
    * @private
    */
-  JGS.Demo1Page.prototype._onNewGraphData = function (graphData) {
+  JGS.Demo2Page.prototype._onNewGraphData = function (graphData) {
     this.drawDygraph(graphData);
+    this.$rangeBtnsCont.css('visibility', 'visible');
     this.showSpinner(false);
 
   };
@@ -124,7 +183,7 @@
    * @param graphData
    * @method drawDygraph
    */
-  JGS.Demo1Page.prototype.drawDygraph = function (graphData) {
+  JGS.Demo2Page.prototype.drawDygraph = function (graphData) {
     var dyData = graphData.dyData;
     var detailStartDateTm = graphData.detailStartDateTm;
     var detailEndDateTm = graphData.detailEndDateTm;
@@ -187,7 +246,7 @@
    * @method _onDyZoomCallback
    * @private
    */
-  JGS.Demo1Page.prototype._onDyZoomCallback = function (minDate, maxDate, yRanges) {
+  JGS.Demo2Page.prototype._onDyZoomCallback = function (minDate, maxDate, yRanges) {
     //console.log("_onDyZoomCallback");
 
     if (this.graph == null)
@@ -228,7 +287,7 @@
    *
    * @method showSpinner
    */
-  JGS.Demo1Page.prototype.showSpinner = function (show) {
+  JGS.Demo2Page.prototype.showSpinner = function (show) {
     if (show === true) {
       if (this.spinner == null) {
         var opts = {
