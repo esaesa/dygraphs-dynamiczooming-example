@@ -5,10 +5,10 @@
    This class provides javascript handling specific  to the example1 page. Most importantly, it provides the dygraphs
    setup and handling, including the handling of mouse-down/up events on the dygraphs range control element.
 
-   @class Demo2Page
+   @class Demo3Page
    @constructor
    */
-  JGS.Demo2Page = function (pageCfg) {
+  JGS.Demo3Page = function (pageCfg) {
     this.$graphCont = pageCfg.$graphCont;
     this.$rangeBtnsCont = pageCfg.$rangeBtnsCont;
 
@@ -23,7 +23,7 @@
    *
    * @method
    */
-  JGS.Demo2Page.prototype.init = function () {
+  JGS.Demo3Page.prototype.init = function () {
     this.showSpinner(true);
 
     this._setupRangeButtons();
@@ -36,8 +36,6 @@
 
     this.$rangeBtnsCont.find("button[name='range-btn-6m']").addClass('active');
 
-    console.log("here", this.$rangeBtnsCont.find("button[name='range-btn-1y']"));
-
     // Default detail dates
     var detailEndMom = moment(rangeEndMom);
     detailEndMom.add('day', -30);
@@ -48,7 +46,7 @@
 
   };
 
-  JGS.Demo2Page.prototype._setupRangeButtons = function () {
+  JGS.Demo3Page.prototype._setupRangeButtons = function () {
     var self = this;
 
     this.$rangeBtnsCont.children().on('click', function (evt) {
@@ -64,7 +62,7 @@
       rangeEndMom.minutes(0).seconds(0);
       rangeEndMom.add('hour', 1);
 
-      console.log("rangeType", rangeType);
+      //console.log("rangeType", rangeType);
 
       var rangeStartMom;
       if (rangeType == "1d") {
@@ -107,7 +105,7 @@
    * @method _setupRangeMouseHandling
    * @private
    */
-  JGS.Demo2Page.prototype._setupRangeMouseHandling = function () {
+  JGS.Demo3Page.prototype._setupRangeMouseHandling = function () {
     var self = this;
 
     // Element used for tracking mouse up events
@@ -152,28 +150,35 @@
 
   };
 
-
-  /**
-   *
-   * @private
-   */
-
   /**
    * Internal method that provides a hook in to Dygraphs default pan interaction handling.  This is a bit of hack
    * and relies on Dygraphs' internals. Without this, pan interactions (holding SHIFT and dragging graph) do not result
    * in detail data being loaded.
    *
+   * This method works by replacing the global Dygraph.Interaction.endPan method.  The replacement method
+   * is global to all instances of this class, and so it can not rely on "self" scope.  To support muliple graphs
+   * with their own pan interactions, we keep a circular reference to this object instance on the dygraphs instance
+   * itself when creating it. This allows us to look up the correct page object instance when the endPan callback is
+   * triggered. We use a global JGS.Demo3Page.isGlobalPanInteractionHandlerInstalled flag to make sure we only install
+   * the global handler once.
+   *
    * @method _setupPanInteractionHandling
    * @private
    */
-  JGS.Demo2Page.prototype._setupPanInteractionHandling = function () {
-    var self = this;
+  JGS.Demo3Page.prototype._setupPanInteractionHandling = function () {
+
+    if (JGS.Demo3Page.isGlobalPanInteractionHandlerInstalled)
+      return;
+    else
+      JGS.Demo3Page.isGlobalPanInteractionHandlerInstalled = true;
 
     //Save original endPan function
     var origEndPan = Dygraph.Interaction.endPan;
 
     //Replace built-in handling with our own function
     Dygraph.Interaction.endPan = function(event, g, context) {
+
+      var myInstance = g.demoPageInstance;
 
       //Call the original to let it do it's magic
       origEndPan(event,g,context);
@@ -183,11 +188,11 @@
       //Note that this _might_ not work as is in IE8. If not, might require a setTimeout hack that executes these
       //next few lines after a few ms delay. Have not tested with IE8 yet.
       var axisX = g.xAxisRange();
-      self.detailStartDateTm = new Date(axisX[0]);
-      self.detailEndDateTm = new Date(axisX[1]);
+      myInstance.detailStartDateTm = new Date(axisX[0]);
+      myInstance.detailEndDateTm = new Date(axisX[1]);
 
       //Trigger new detail load
-      self._loadNewDetailData();
+      myInstance._loadNewDetailData();
     };
     Dygraph.endPan = Dygraph.Interaction.endPan; //see dygraph-interaction-model.js
   };
@@ -200,7 +205,7 @@
    * @method _loadNewDetailData
    * @private
    */
-  JGS.Demo2Page.prototype._loadNewDetailData = function () {
+  JGS.Demo3Page.prototype._loadNewDetailData = function () {
     this.showSpinner(true);
     this.graphDataProvider.loadData("Series-A", null, null, this.detailStartDateTm, this.detailEndDateTm, this.$graphCont.width());
   };
@@ -212,7 +217,7 @@
    * @method _onNewGraphData
    * @private
    */
-  JGS.Demo2Page.prototype._onNewGraphData = function (graphData) {
+  JGS.Demo3Page.prototype._onNewGraphData = function (graphData) {
     this.drawDygraph(graphData);
     this.$rangeBtnsCont.css('visibility', 'visible');
     this.showSpinner(false);
@@ -225,7 +230,7 @@
    * @param graphData
    * @method drawDygraph
    */
-  JGS.Demo2Page.prototype.drawDygraph = function (graphData) {
+  JGS.Demo3Page.prototype.drawDygraph = function (graphData) {
     var dyData = graphData.dyData;
     var detailStartDateTm = graphData.detailStartDateTm;
     var detailEndDateTm = graphData.detailEndDateTm;
@@ -271,6 +276,9 @@
       this._setupRangeMouseHandling();
       this._setupPanInteractionHandling();
 
+      //Store this object instance on the graph itself so we can later reference it for endPan callback handling
+      this.graph.demoPageInstance = this;
+
     }
     //Update existing graph instance
     else {
@@ -285,7 +293,7 @@
 
   };
 
-  JGS.Demo2Page.prototype._onDyDrawCallback = function (dygraph, is_initial) {
+  JGS.Demo3Page.prototype._onDyDrawCallback = function (dygraph, is_initial) {
 //      console.log("_onDyDrawCallback");
 //
 //    //IE8 does not have new dates at time of callback, so use timer hack
@@ -316,7 +324,7 @@
    * @method _onDyZoomCallback
    * @private
    */
-  JGS.Demo2Page.prototype._onDyZoomCallback = function (minDate, maxDate, yRanges) {
+  JGS.Demo3Page.prototype._onDyZoomCallback = function (minDate, maxDate, yRanges) {
     //console.log("_onDyZoomCallback");
 
     if (this.graph == null)
@@ -357,7 +365,7 @@
    *
    * @method showSpinner
    */
-  JGS.Demo2Page.prototype.showSpinner = function (show) {
+  JGS.Demo3Page.prototype.showSpinner = function (show) {
     if (show === true) {
       if (this.spinner == null) {
         var opts = {
