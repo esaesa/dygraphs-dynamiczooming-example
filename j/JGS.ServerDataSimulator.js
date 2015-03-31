@@ -39,10 +39,10 @@
     var currIdx = 0;
     for (var i = 0; i < this.serverData.length; i++) {
 
-      if (this.serverData[currIdx].x > (currTime - timePerInterval))
-        break;
-      else
+      if (this.serverData[currIdx].x < (currTime - timePerInterval))
         currIdx++;
+      else
+        break;
     }
 
     // Calculate average/min/max while downsampling
@@ -52,7 +52,7 @@
       var min = 9007199254740992;
       var max = -9007199254740992;
 
-      while (currIdx < this.serverData.length && this.serverData[currIdx].x <= currTime) {
+      while (currIdx < this.serverData.length && this.serverData[currIdx].x < currTime) {
         sum += this.serverData[currIdx].y;
         min = Math.min(min, this.serverData[currIdx].y);
         max = Math.max(max, this.serverData[currIdx].y);
@@ -124,9 +124,11 @@
    */
   JGS.ServerDataSimulator.prototype._generateServerData = function () {
 
-    var startMom = moment('2012-01-01').utc();
-    var endMom = moment('2015-01-01').utc();
-    //endMom.add('day', -5);
+    var startMom = moment().utc();
+	startMom.add('year',-3);
+	
+    var endMom = moment().utc();
+    endMom.add('day', 30);
 
     var min = 500;
     var max = 1500;
